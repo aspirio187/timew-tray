@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TimewTray.App/TimewTray.App.csproj" />
+    <Project Path="src/TimewTray.Core/TimewTray.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TimewTray.Tests/TimewTray.Tests.csproj" />
+  </Folder>
+</Solution>

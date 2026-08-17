@@ -12,7 +12,7 @@ permissions:
   contents: read
 
 env:
-  DOTNET_VERSION: 8.0.x
+  DOTNET_VERSION: 10.0.x
 
 jobs:
   build-test:
@@ -39,14 +39,14 @@ jobs:
         id: detect
         shell: pwsh
         run: |
-          $items = Get-ChildItem -Path . -Recurse -File -Include *.sln,*.csproj |
+          $items = Get-ChildItem -Path . -Recurse -File -Include *.sln,*.slnx,*.csproj |
             Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }
 
           if ($items.Count -eq 0) {
             "has_dotnet=false" >> $env:GITHUB_OUTPUT
             Write-Host "No .NET solution or project found yet; skipping build."
           } else {
-            $solution = $items | Where-Object { $_.Extension -eq ".sln" } | Select-Object -First 1
+            $solution = $items | Where-Object { $_.Extension -in ".sln", ".slnx" } | Select-Object -First 1
             $target = if ($null -ne $solution) {
               $solution
             } else {
