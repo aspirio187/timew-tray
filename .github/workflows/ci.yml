@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: 8.0.x
+
+jobs:
+  build-test:
+    name: Build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Detect .NET projects
+        id: detect
+        shell: pwsh
+        run: |
+          $items = Get-ChildItem -Path . -Recurse -File -Include *.sln,*.csproj |
+            Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }
+
+          if ($items.Count -eq 0) {
+            "has_dotnet=false" >> $env:GITHUB_OUTPUT
+            Write-Host "No .NET solution or project found yet; skipping build."
+          } else {
+            $solution = $items | Where-Object { $_.Extension -eq ".sln" } | Select-Object -First 1
+            $target = if ($null -ne $solution) {
+              $solution
+            } else {
+              $items | Where-Object { $_.Extension -eq ".csproj" } | Select-Object -First 1
+            }
+
+            "has_dotnet=true" >> $env:GITHUB_OUTPUT
+            "target=$($target.FullName)" >> $env:GITHUB_OUTPUT
+            Write-Host "Using $($target.FullName)"
+            $items | ForEach-Object { Write-Host "Found $($_.FullName)" }
+          }
+
+      - name: Restore
+        if: steps.detect.outputs.has_dotnet == 'true'
+        run: dotnet restore "${{ steps.detect.outputs.target }}"
+
+      - name: Build
+        if: steps.detect.outputs.has_dotnet == 'true'
+        run: dotnet build "${{ steps.detect.outputs.target }}" --configuration Release --no-restore
+
+      - name: Test
+        if: steps.detect.outputs.has_dotnet == 'true'
+        shell: pwsh
+        run: |
+          $testProjects = Get-ChildItem -Path . -Recurse -File -Filter *Tests.csproj |
+            Where-Object { $_.FullName -notmatch '[\\/](bin|obj)[\\/]' }
+
+          if ($testProjects.Count -eq 0) {
+            Write-Host "No test projects found yet."
+            exit 0
+          }
+
+          foreach ($project in $testProjects) {
+            dotnet test $project.FullName --configuration Release --no-restore --verbosity normal
+          }

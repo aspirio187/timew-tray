@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Timewarrior documentation
+    url: https://timewarrior.net/docs/
+    about: Reference for Timewarrior commands and behavior.
+  - name: Avalonia documentation
+    url: https://docs.avaloniaui.net/
+    about: Reference for Avalonia UI development.
+
